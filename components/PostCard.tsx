@@ -1,93 +1,98 @@
 import Link from 'next/link'
+import CategoryBadge from './CategoryBadge'
+import MoodBadge from './MoodBadge'
 import type { InspirationalPost } from '@/types'
-import CategoryBadge from '@/components/CategoryBadge'
-import MoodBadge from '@/components/MoodBadge'
+import type { CSSProperties } from 'react'
 
 interface PostCardProps {
   post: InspirationalPost
   showCategory?: boolean
   className?: string
+  style?: CSSProperties
 }
 
-export default function PostCard({ post, showCategory = true, className = '' }: PostCardProps) {
+export default function PostCard({ 
+  post, 
+  showCategory = true, 
+  className = '',
+  style = {}
+}: PostCardProps) {
   const featuredImage = post.metadata?.featured_image
   const category = post.metadata?.category
+  const shortQuote = post.metadata?.short_quote || ''
+  const authorSpeaker = post.metadata?.author_speaker || ''
   const mood = post.metadata?.mood
-  const shortQuote = post.metadata?.short_quote
-  const publicationDate = post.metadata?.publication_date
-
-  const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      })
-    } catch {
-      return dateString
-    }
-  }
+  
+  // Optimize image with imgix parameters (2x container size for high-resolution displays)
+  const optimizedImageUrl = featuredImage?.imgix_url 
+    ? `${featuredImage.imgix_url}?w=800&h=600&fit=crop&auto=format,compress`
+    : null
 
   return (
-    <article className={`card animate-fade-in ${className}`}>
-      {featuredImage && (
-        <div className="aspect-w-16 aspect-h-9 bg-secondary-100">
+    <article 
+      className={`card overflow-hidden hover:shadow-xl transition-all duration-300 animate-slide-up ${className}`}
+      style={style}
+    >
+      {/* Featured Image */}
+      {optimizedImageUrl && (
+        <div className="aspect-video overflow-hidden">
           <img
-            src={`${featuredImage.imgix_url}?w=800&h=450&fit=crop&auto=format,compress`}
+            src={optimizedImageUrl}
             alt={post.title}
-            className="w-full h-48 object-cover"
-            width={400}
-            height={225}
+            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+            width={800}
+            height={600}
           />
         </div>
       )}
       
+      {/* Content */}
       <div className="p-6">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            {showCategory && category && (
-              <CategoryBadge category={category} />
-            )}
-            {mood && (
-              <MoodBadge mood={mood.value} />
-            )}
-          </div>
-          {publicationDate && (
-            <time className="text-sm text-secondary-500" dateTime={publicationDate}>
-              {formatDate(publicationDate)}
-            </time>
+        {/* Category and Mood */}
+        <div className="flex items-center justify-between mb-4">
+          {showCategory && category && (
+            <CategoryBadge category={category} />
+          )}
+          {mood && (
+            <MoodBadge mood={mood.value} />
           )}
         </div>
         
-        <h2 className="text-xl font-semibold text-secondary-900 mb-3 line-clamp-2">
-          <Link 
-            href={`/posts/${post.slug}`}
-            className="hover:text-primary-600 transition-colors duration-200"
-          >
+        {/* Title */}
+        <h2 className="text-xl font-bold text-secondary-900 mb-3 line-clamp-2 hover:text-primary-600 transition-colors">
+          <Link href={`/posts/${post.slug}`}>
             {post.title}
           </Link>
         </h2>
         
+        {/* Short Quote */}
         {shortQuote && (
-          <blockquote className="text-secondary-600 italic mb-4 line-clamp-2">
+          <p className="text-secondary-600 mb-4 line-clamp-3 leading-relaxed">
             "{shortQuote}"
-          </blockquote>
+          </p>
         )}
         
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-secondary-500">
-            {post.metadata?.author_speaker && (
-              <span>by {post.metadata.author_speaker}</span>
-            )}
-          </div>
-          
-          <Link 
-            href={`/posts/${post.slug}`}
-            className="text-primary-600 hover:text-primary-700 font-medium text-sm transition-colors duration-200"
-          >
-            Read More →
-          </Link>
+        {/* Author and Date */}
+        <div className="flex items-center justify-between text-sm text-secondary-500 mb-4">
+          {authorSpeaker && (
+            <span>by {authorSpeaker}</span>
+          )}
+          <time dateTime={post.metadata?.publication_date || post.created_at}>
+            {new Date(post.metadata?.publication_date || post.created_at).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}
+          </time>
         </div>
+        
+        {/* Read More Button */}
+        <Link 
+          href={`/posts/${post.slug}`}
+          className="btn-primary text-sm px-4 py-2 w-full text-center hover:shadow-md transition-all duration-200"
+        >
+          Read Full Message →
+        </Link>
       </div>
     </article>
   )
